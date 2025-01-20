@@ -11,6 +11,7 @@ import {
 import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
+import {useState} from 'react';
 
 /**
  * @type {MetaFunction<typeof loader>}
@@ -83,6 +84,7 @@ function loadDeferredData({context, params}) {
 export default function Product() {
   /** @type {LoaderReturnData} */
   const {product} = useLoaderData();
+  const [showFrom, setShowForm] = useState(false);
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -103,27 +105,23 @@ export default function Product() {
   const {title, descriptionHtml} = product;
 
   return (
-    <div className="product">
+    <div className="max-w-md mx-auto flex flex-col gap-10 w-full min-h-[90dvh] justify-start pt-20">
       <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+      <div className=" flex flex-col items-center justify-center h-full">
+        <h1 className="">{title}</h1>
+        
+        {showFrom ? (
+          <ProductForm
+            setShowForm={setShowForm}
+            productOptions={productOptions}
+            selectedVariant={selectedVariant}
+          />
+        ) : (
+          <button className='text-3xl' onClick={() => setShowForm(!showFrom)}>
+            +
+          </button>
+        )}
+        
       </div>
       <Analytics.ProductView
         data={{

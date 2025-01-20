@@ -1,6 +1,7 @@
 import {Link, useNavigate} from '@remix-run/react';
-import {AddToCartButton} from './AddToCartButton';
 import {useAside} from './Aside';
+import {CartForm} from '@shopify/hydrogen';
+import {ChevronLeft} from 'lucide-react';
 
 /**
  * @param {{
@@ -8,19 +9,34 @@ import {useAside} from './Aside';
  *   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
  * }}
  */
-export function ProductForm({productOptions, selectedVariant}) {
+export function ProductForm({productOptions, selectedVariant, setShowForm}) {
   const navigate = useNavigate();
   const {open} = useAside();
+
+  // Function to handle adding the selected variant to the cart
+  const handleAddToCart = (variant) => {
+    if (variant && variant.availableForSale) {
+      // Open the cart aside
+      open('cart');
+    }
+  };
+
   return (
-    <div className="product-form">
+    <div className="flex flex-col items-center justify-center w-full">
       {productOptions.map((option) => {
         // If there is only a single value in the option values, don't display the option
         if (option.optionValues.length === 1) return null;
 
         return (
-          <div className="product-options" key={option.name}>
-            <h5>{option.name}</h5>
-            <div className="product-options-grid">
+          <div className=" w-[80%] mx-auto" key={option.name}>
+            <h5 className="text-center w-full relative">
+              {option.name}
+              <ChevronLeft
+                onClick={() => setShowForm(false)}
+                className="w-5 h-5 cursor-pointer absolute right-0 top-1/2 -translate-y-1/2"
+              />
+            </h5>
+            <div className=" flex items-center justify-between">
               {option.optionValues.map((value) => {
                 const {
                   name,
@@ -32,6 +48,9 @@ export function ProductForm({productOptions, selectedVariant}) {
                   isDifferentProduct,
                   swatch,
                 } = value;
+
+                // Ensure no size is selected by default
+                const isSelected = false; // Force no default selection
 
                 if (isDifferentProduct) {
                   // SEO
@@ -47,7 +66,7 @@ export function ProductForm({productOptions, selectedVariant}) {
                       replace
                       to={`/products/${handle}?${variantUriQuery}`}
                       style={{
-                        border: selected
+                        border: isSelected
                           ? '1px solid black'
                           : '1px solid transparent',
                         opacity: available ? 1 : 0.3,
@@ -63,30 +82,47 @@ export function ProductForm({productOptions, selectedVariant}) {
                   // the variant so that SEO bots do not index these as
                   // duplicated links
                   return (
-                    <button
-                      type="button"
-                      className={`product-options-item${
-                        exists && !selected ? ' link' : ''
-                      }`}
+                    <CartForm
+                      route="/cart"
+                      inputs={{
+                        lines: [
+                          {
+                            merchandiseId: selectedVariant?.id,
+                            quantity: 1,
+                          },
+                        ],
+                      }}
+                      action={CartForm.ACTIONS.LinesAdd}
                       key={option.name + name}
-                      style={{
-                        border: selected
-                          ? '1px solid black'
-                          : '1px solid transparent',
-                        opacity: available ? 1 : 0.3,
-                      }}
-                      disabled={!exists}
-                      onClick={() => {
-                        if (!selected) {
-                          navigate(`?${variantUriQuery}`, {
-                            replace: true,
-                            preventScrollReset: true,
-                          });
-                        }
-                      }}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
-                    </button>
+                      {(fetcher) => (
+                        <button
+                          type="submit"
+                          className={`product-options-item${
+                            exists && !isSelected ? ' link' : ''
+                          }`}
+                          style={{
+                            border: isSelected
+                              ? '1px solid black'
+                              : '1px solid transparent',
+                            opacity: available ? 1 : 0.3,
+                          }}
+                          disabled={!exists || fetcher.state !== 'idle'}
+                          onClick={() => {
+                            if (!isSelected) {
+                              navigate(`?${variantUriQuery}`, {
+                                replace: true,
+                                preventScrollReset: true,
+                              });
+                              // Call the handleAddToCart function to open the cart aside
+                              handleAddToCart(selectedVariant);
+                            }
+                          }}
+                        >
+                          <ProductOptionSwatch swatch={swatch} name={name} />
+                        </button>
+                      )}
+                    </CartForm>
                   );
                 }
               })}
@@ -95,25 +131,6 @@ export function ProductForm({productOptions, selectedVariant}) {
           </div>
         );
       })}
-      <AddToCartButton
-        disabled={!selectedVariant || !selectedVariant.availableForSale}
-        onClick={() => {
-          open('cart');
-        }}
-        lines={
-          selectedVariant
-            ? [
-                {
-                  merchandiseId: selectedVariant.id,
-                  quantity: 1,
-                  selectedVariant,
-                },
-              ]
-            : []
-        }
-      >
-        {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
-      </AddToCartButton>
     </div>
   );
 }

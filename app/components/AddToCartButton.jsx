@@ -29,6 +29,7 @@ export function AddToCartButton({
             type="submit"
             onClick={onClick}
             disabled={disabled ?? fetcher.state !== 'idle'}
+            className='text-3xl cursor-pointer'
           >
             {children}
           </button>

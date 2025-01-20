@@ -13,7 +13,7 @@ import {useAside} from './Aside';
  * }}
  */
 export function CartLineItem({layout, line}) {
-  const {id, merchandise} = line;
+  const {id, merchandise, isOptimistic} = line;
   const {product, title, image, selectedOptions} = merchandise;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
   const {close} = useAside();
@@ -31,31 +31,36 @@ export function CartLineItem({layout, line}) {
         />
       )}
 
-      <div>
-        <Link
-          prefetch="intent"
-          to={lineItemUrl}
-          onClick={() => {
-            if (layout === 'aside') {
-              close();
-            }
-          }}
-        >
-          <p>
-            <strong>{product.title}</strong>
-          </p>
-        </Link>
-        <ProductPrice price={line?.cost?.totalAmount} />
+      <div className="w-full px-5">
+        <div className="flex items-center justify-between">
+          <Link
+            prefetch="intent"
+            to={lineItemUrl}
+            onClick={() => {
+              if (layout === 'aside') {
+                close();
+              }
+            }}
+          >
+            <p>
+              <strong>{product.title}</strong>
+            </p>
+          </Link>
+          <ProductPrice price={line?.cost?.totalAmount} />
+        </div>
         <ul>
           {selectedOptions.map((option) => (
-            <li key={option.name}>
-              <small>
-                {option.name}: {option.value}
-              </small>
+            <li key={option.name} className="flex items-center justify-between">
+              <small>{option.name}:</small>
+              <small>{option.value}</small>
             </li>
           ))}
         </ul>
         <CartLineQuantity line={line} />
+        <div className="flex items-center justify-between">
+          &nbsp;
+          <CartLineRemoveButton lineIds={[id]} disabled={!!isOptimistic} />
+        </div>
       </div>
     </li>
   );
@@ -74,31 +79,31 @@ function CartLineQuantity({line}) {
   const nextQuantity = Number((quantity + 1).toFixed(0));
 
   return (
-    <div className="cart-line-quantity">
-      <small>Quantity: {quantity} &nbsp;&nbsp;</small>
-      <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
-        <button
-          aria-label="Decrease quantity"
-          disabled={quantity <= 1 || !!isOptimistic}
-          name="decrease-quantity"
-          value={prevQuantity}
-        >
-          <span>&#8722; </span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
-        <button
-          aria-label="Increase quantity"
-          name="increase-quantity"
-          value={nextQuantity}
-          disabled={!!isOptimistic}
-        >
-          <span>&#43;</span>
-        </button>
-      </CartLineUpdateButton>
-      &nbsp;
-      <CartLineRemoveButton lineIds={[lineId]} disabled={!!isOptimistic} />
+    <div className="flex items-center justify-between">
+      <small>Quantity: &nbsp;&nbsp;</small>
+      <div className="flex items-center justify-center gap-2 ">
+        <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
+          <button
+            aria-label="Decrease quantity"
+            disabled={quantity <= 1 || !!isOptimistic}
+            name="decrease-quantity"
+            value={prevQuantity}
+          >
+            <span>&#8722; </span>
+          </button>
+        </CartLineUpdateButton>
+        <small>{quantity} </small>
+        <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
+          <button
+            aria-label="Increase quantity"
+            name="increase-quantity"
+            value={nextQuantity}
+            disabled={!!isOptimistic}
+          >
+            <span>&#43;</span>
+          </button>
+        </CartLineUpdateButton>
+      </div>
     </div>
   );
 }

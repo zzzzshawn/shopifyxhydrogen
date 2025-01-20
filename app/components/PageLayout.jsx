@@ -34,12 +34,7 @@ export function PageLayout({
           publicStoreDomain={publicStoreDomain}
         />
       )}
-      <main className="mt-[5rem]">{children}</main>
-      <Footer
-        footer={footer}
-        header={header}
-        publicStoreDomain={publicStoreDomain}
-      />
+      <main className="pt-[3.5rem] font-mono ">{children}</main>
     </Aside.Provider>
   );
 }
