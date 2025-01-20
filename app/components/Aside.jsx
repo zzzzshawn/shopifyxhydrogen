@@ -19,7 +19,7 @@ export function Aside({children, heading, type}) {
   const {type: activeType, close} = useAside();
   const expanded = type === activeType;
 
-  useEffect(() => {
+  useEffect(() => { 
     if (!expanded) return;
 
     const scrollY = window.scrollY;
