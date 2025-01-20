@@ -1,26 +1,99 @@
-import {Suspense} from 'react';
+import {Suspense, useEffect, useState} from 'react';
 import {Await, NavLink, useAsyncValue} from '@remix-run/react';
 import {useAnalytics, useOptimisticCart} from '@shopify/hydrogen';
 import {useAside} from '~/components/Aside';
+import {ChevronRight, Menu, ShoppingBag} from 'lucide-react';
 
 /**
  * @param {HeaderProps}
  */
 export function Header({header, isLoggedIn, cart, publicStoreDomain}) {
-  const {shop, menu} = header;
+  const {menu} = header;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  useEffect(() => {
+    if (menuOpen) {
+      const header = document.getElementById('main-header');
+      if (header) {
+        setHeaderHeight(header.offsetHeight);
+      }
+    }
+
+    return () => {
+      setHeaderHeight(0);
+    };
+  }, [menuOpen]);
+
   return (
-    <header className="header">
-      <NavLink prefetch="intent" to="/" style={activeLinkStyle} end>
-        <strong>{shop.name}</strong>
-      </NavLink>
-      <HeaderMenu
-        menu={menu}
-        viewport="desktop"
-        primaryDomainUrl={header.shop.primaryDomain.url}
-        publicStoreDomain={publicStoreDomain}
-      />
-      <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
-    </header>
+    <>
+      {/* Spacer div that pushes content down */}
+      <div className="sm:hidden" style={{height: headerHeight}} />
+
+      {/* Main header */}
+      <header
+        id="main-header"
+        className={`z-40 bg-white w-full flex flex-col items-center justify-between px-5 font-mono fixed top-0`}
+      >
+        <div className="flex items-center justify-between w-full h-12">
+          <div className="flex items-center justify-center gap-5">
+            <div
+              className="cursor-pointer"
+              onClick={() => setMenuOpen(!menuOpen)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setMenuOpen(!menuOpen);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+            >
+              {!menuOpen ? (
+                <Menu className="size-6" />
+              ) : (
+                <ChevronRight className="size-6" />
+              )}
+            </div>
+            {menuOpen && (
+              <div className="max-sm:hidden">
+                <HeaderMenu
+                  menu={menu}
+                  viewport="desktop"
+                  primaryDomainUrl={header.shop.primaryDomain.url}
+                  publicStoreDomain={publicStoreDomain}
+                />
+              </div>
+            )}
+          </div>
+          <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
+        </div>
+        {menuOpen && (
+          <div className="sm:hidden w-full max-sm:pb-5 px-2">
+            <div>
+              <HeaderMenu
+                menu={menu}
+                viewport="desktop"
+                primaryDomainUrl={header.shop.primaryDomain.url}
+                publicStoreDomain={publicStoreDomain}
+              />
+            </div>
+          </div>
+        )}
+      </header>
+      {menuOpen && (
+        <div
+          className="fixed inset-0 bg-transparent z-30 sm:hidden"
+          style={{top: headerHeight}}
+          onClick={() => setMenuOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setMenuOpen(false);
+            }
+          }}
+          tabIndex={0}
+          role="button"
+        />
+      )}
+    </>
   );
 }
 
@@ -38,19 +111,12 @@ export function HeaderMenu({
   viewport,
   publicStoreDomain,
 }) {
-  const className = `header-menu-${viewport}`;
   const {close} = useAside();
 
   return (
-    <nav className={className} role="navigation">
+    <nav className={`flex sm:gap-7 max-sm:flex-col gap-3`} role="navigation">
       {viewport === 'mobile' && (
-        <NavLink
-          end
-          onClick={close}
-          prefetch="intent"
-          style={activeLinkStyle}
-          to="/"
-        >
+        <NavLink end onClick={close} prefetch="intent" to="/">
           Home
         </NavLink>
       )}
@@ -66,12 +132,11 @@ export function HeaderMenu({
             : item.url;
         return (
           <NavLink
-            className="header-menu-item"
+            className="uppercase hover:no-underline"
             end
             key={item.id}
             onClick={close}
             prefetch="intent"
-            style={activeLinkStyle}
             to={url}
           >
             {item.title}
@@ -87,30 +152,18 @@ export function HeaderMenu({
  */
 function HeaderCtas({isLoggedIn, cart}) {
   return (
-    <nav className="header-ctas" role="navigation">
-      <HeaderMenuMobileToggle />
-      <NavLink prefetch="intent" to="/account" style={activeLinkStyle}>
+    <nav className="" role="navigation">
+      {/* <HeaderMenuMobileToggle />
+      <NavLink prefetch="intent" to="/account">
         <Suspense fallback="Sign in">
           <Await resolve={isLoggedIn} errorElement="Sign in">
             {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
           </Await>
         </Suspense>
-      </NavLink>
-      <SearchToggle />
+      </NavLink> */}
+      {/* <SearchToggle /> */}
       <CartToggle cart={cart} />
     </nav>
-  );
-}
-
-function HeaderMenuMobileToggle() {
-  const {open} = useAside();
-  return (
-    <button
-      className="header-menu-mobile-toggle reset"
-      onClick={() => open('mobile')}
-    >
-      <h3>☰</h3>
-    </button>
   );
 }
 
@@ -165,7 +218,23 @@ function CartToggle({cart}) {
 function CartBanner() {
   const originalCart = useAsyncValue();
   const cart = useOptimisticCart(originalCart);
-  return <CartBadge count={cart?.totalQuantity ?? 0} />;
+  const {open} = useAside();
+  return (
+    <div
+      className="flex items-center gap-1 cursor-pointer"
+      onClick={() => open('cart')}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          open('cart');
+        }
+      }}
+      tabIndex={0}
+      role="button"
+    >
+      <ShoppingBag className="size-5" />
+      <p>{cart?.totalQuantity ?? 0}</p>
+    </div>
+  );
 }
 
 const FALLBACK_HEADER_MENU = {
@@ -216,12 +285,6 @@ const FALLBACK_HEADER_MENU = {
  *   isPending: boolean;
  * }}
  */
-function activeLinkStyle({isActive, isPending}) {
-  return {
-    fontWeight: isActive ? 'bold' : undefined,
-    color: isPending ? 'grey' : 'black',
-  };
-}
 
 /** @typedef {'desktop' | 'mobile'} Viewport */
 /**
